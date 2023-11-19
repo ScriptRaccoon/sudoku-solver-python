@@ -17,10 +17,10 @@ class Sudoku:
 
     peer_dict: dict[str, set[tuple[int, int]]] = {
         key(row, col): set.union(
-            {(i, col) for i in range(9) if i != row},
-            {(row, j) for j in range(9) if j != col},
+            {key(i, col) for i in range(9) if i != row},
+            {key(row, j) for j in range(9) if j != col},
             {
-                (3 * (row // 3) + i, 3 * (col // 3) + j)
+                key(3 * (row // 3) + i, 3 * (col // 3) + j)
                 for i in range(3)
                 for j in range(3)
                 if 3 * (row // 3) + i != row or 3 * (col // 3) + j != col
@@ -38,6 +38,7 @@ class Sudoku:
     ) -> None:
         """Initialize Sudoku with a value and a candidate dictionary"""
         self.value_dict = value_dict
+        self.coords = value_dict.keys()
         self.has_contradiction = False
 
         if candidate_dict is None:
@@ -76,15 +77,12 @@ class Sudoku:
                 print(" " + "-" * 23)
         print()
 
-    def candidates(self, row: int, col: int) -> str:
+    def candidates(self, _key: str) -> str:
         """Generates the list (encoded as a string) of candidates at a position"""
-        _key = key(row, col)
         num = self.value_dict[_key]
         if num != 0:
             return str(num)
-        values_of_peers = {
-            self.value_dict[key(i, j)] for i, j in Sudoku.peer_dict[_key]
-        }
+        values_of_peers = {self.value_dict[peer] for peer in Sudoku.peer_dict[_key]}
         result = ""
         for n in range(1, 10):
             if n not in values_of_peers:
@@ -93,60 +91,54 @@ class Sudoku:
 
     def get_candidate_board(self) -> dict[str, str]:
         """Returns the dictionary of candidates over all coordinates"""
-        return {
-            key(row, col): self.candidates(row, col)
-            for row in range(9)
-            for col in range(9)
-        }
+        return {coord: self.candidates(coord) for coord in self.coords}
 
-    def get_next_coord(self) -> tuple[int, int] | None:
+    def get_next_coord(self) -> str | None:
         """Returns the open coordinate with the least number of candidates"""
-        candidate_list = [
-            (row, col, self.candidate_dict[key(row, col)])
-            for row in range(9)
-            for col in range(9)
-            if self.value_dict[key(row, col)] == 0
-        ]
-        if len(candidate_list) == 0:
-            return None
-        coord_with_count = min(candidate_list, key=lambda x: len(x[2]))
-        return coord_with_count[:2]
 
-    def remove_candidate(self, row: int, col: int, num: int) -> None:
+        candidate_list = [
+            (coord, len(self.candidate_dict[coord]))
+            for coord in self.coords
+            if self.value_dict[coord] == 0
+        ]
+
+        if not candidate_list:
+            return None
+        return min(candidate_list, key=lambda x: x[1])[0]
+
+    def remove_candidate(self, coord: str, num: int) -> None:
         """Removes a candidate from a coordinate (in case it's there),
         detects if a contradiction happens, and if a single candidate
         is left this one is set."""
-        _key = key(row, col)
-        if str(num) not in self.candidate_dict[_key]:
+        if str(num) not in self.candidate_dict[coord]:
             return
-        self.candidate_dict[_key] = self.candidate_dict[_key].replace(str(num), "")
-        if len(self.candidate_dict[_key]) == 0:
+        self.candidate_dict[coord] = self.candidate_dict[coord].replace(str(num), "")
+        if len(self.candidate_dict[coord]) == 0:
             self.has_contradiction = True
-        elif len(self.candidate_dict[_key]) == 1:
-            unique_candidate = int(self.candidate_dict[_key])
-            self.set_number(row, col, unique_candidate)
+        elif len(self.candidate_dict[coord]) == 1:
+            unique_candidate = int(self.candidate_dict[coord])
+            self.set_number(coord, unique_candidate)
 
-    def set_number(self, row: int, col: int, num: int) -> None:
-        """Sets a number at a given coordinate, and removes that number
-        from the candidates of the coordinate's peers"""
-        _key = key(row, col)
-        self.value_dict[_key] = num
-        self.candidate_dict[_key] = str(num)
-        for i, j in Sudoku.peer_dict[_key]:
-            self.remove_candidate(i, j, num)
+    def set_number(self, coord: str, num: int) -> None:
+        """Sets a number at a given coordinate (via its key), and removes
+        that number from the candidates of the coordinate's peers"""
+        self.value_dict[coord] = num
+        self.candidate_dict[coord] = str(num)
+        for peer in Sudoku.peer_dict[coord]:
+            self.remove_candidate(peer, num)
             if self.has_contradiction:
                 return
 
     def solutions(self) -> Iterator[Sudoku]:
         """Generates solutions of the given Sudoku"""
         coord = self.get_next_coord()
-        if coord is None:
+        if not coord:
             yield self
             return
-        row, col = coord
-        for num in self.candidate_dict[key(row, col)]:
+
+        for num in self.candidate_dict[coord]:
             copy = self.copy()
-            copy.set_number(row, col, int(num))
+            copy.set_number(coord, int(num))
             if not copy.has_contradiction:
                 yield from copy.solutions()
 
