@@ -15,12 +15,12 @@ def key(row: int, col: int) -> str:
 class Sudoku:
     """Sudoku class"""
 
-    peer_dict: dict[str, set[str]] = {
+    peer_dict: dict[str, set[tuple[int, int]]] = {
         key(row, col): set.union(
-            {key(i, col) for i in range(9) if i != row},
-            {key(row, j) for j in range(9) if j != col},
+            {(i, col) for i in range(9) if i != row},
+            {(row, j) for j in range(9) if j != col},
             {
-                key(3 * (row // 3) + i, 3 * (col // 3) + j)
+                (3 * (row // 3) + i, 3 * (col // 3) + j)
                 for i in range(3)
                 for j in range(3)
                 if 3 * (row // 3) + i != row or 3 * (col // 3) + j != col
@@ -82,7 +82,9 @@ class Sudoku:
         num = self.value_dict[_key]
         if num != 0:
             return str(num)
-        values_of_peers = {self.value_dict[peer] for peer in Sudoku.peer_dict[_key]}
+        values_of_peers = {
+            self.value_dict[key(i, j)] for i, j in Sudoku.peer_dict[_key]
+        }
         result = ""
         for n in range(1, 10):
             if n not in values_of_peers:
@@ -130,23 +132,10 @@ class Sudoku:
         _key = key(row, col)
         self.value_dict[_key] = num
         self.candidate_dict[_key] = str(num)
-        for i in range(9):
-            if i != col:
-                self.remove_candidate(row, i, num)
-                if self.has_contradiction:
-                    return
-            if i != row:
-                self.remove_candidate(i, col, num)
-                if self.has_contradiction:
-                    return
-        row_start = 3 * (row // 3)
-        col_start = 3 * (col // 3)
-        for i in range(row_start, row_start + 3):
-            for j in range(col_start, col_start + 3):
-                if i != row or j != col:
-                    self.remove_candidate(i, j, num)
-                    if self.has_contradiction:
-                        return
+        for i, j in Sudoku.peer_dict[_key]:
+            self.remove_candidate(i, j, num)
+            if self.has_contradiction:
+                return
 
     def solutions(self) -> Iterator[Sudoku]:
         """Generates solutions of the given Sudoku"""
