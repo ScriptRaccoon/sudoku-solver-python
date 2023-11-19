@@ -25,11 +25,9 @@ class Sudoku:
         self,
         value_dict: dict[str, int],
         candidate_dict: dict[str, str] | None = None,
-        debug: bool = False,
     ) -> None:
         self.value_dict = value_dict
         self.has_contradiction = False
-        self.debug = debug
 
         if candidate_dict is None:
             self.candidate_dict = self.get_candidate_board()
@@ -37,14 +35,16 @@ class Sudoku:
             self.candidate_dict = candidate_dict
 
     @staticmethod
-    def generate_from_board(board: list[list[int]], debug: bool = False) -> Sudoku:
+    def generate_from_board(
+        board: list[list[int]],
+    ) -> Sudoku:
         value_dict = {
             f"{row}{col}": board[row][col] for row in range(9) for col in range(9)
         }
-        return Sudoku(value_dict, None, debug)
+        return Sudoku(value_dict, None)
 
     def copy(self) -> Sudoku:
-        return Sudoku(self.value_dict.copy(), self.candidate_dict.copy(), self.debug)
+        return Sudoku(self.value_dict.copy(), self.candidate_dict.copy())
 
     def print(self) -> None:
         print(" " + "-" * 23)
@@ -93,32 +93,23 @@ class Sudoku:
             return None
         coord_with_count = min(candidate_list, key=lambda x: len(x[2]))
         coord = coord_with_count[:2]
-        if self.debug:
-            print(f"try {coord} with the candidates {coord_with_count[2]}")
 
         return coord
 
     def remove_candidate(self, row: int, col: int, num: int) -> None:
         if str(num) not in self.candidate_dict[f"{row}{col}"]:
             return
-        if self.debug:
-            print(f"remove candidate {num} from {(row,col)}")
+
         self.candidate_dict[f"{row}{col}"] = self.candidate_dict[f"{row}{col}"].replace(
             str(num), ""
         )
         if len(self.candidate_dict[f"{row}{col}"]) == 0:
-            if self.debug:
-                print(f"found a contradiction in {(row,col)}, will backtrack")
             self.has_contradiction = True
         elif len(self.candidate_dict[f"{row}{col}"]) == 1:
-            if self.debug:
-                print(f"just one candidate left in {(row,col)}")
             unique_candidate = int(self.candidate_dict[f"{row}{col}"][0])
             self.set_number(row, col, unique_candidate)
 
     def set_number(self, row: int, col: int, num: int) -> None:
-        if self.debug:
-            print(f"in {(row,col)} we try to set {num}")
         self.value_dict[f"{row}{col}"] = num
         self.candidate_dict[f"{row}{col}"] = str(num)
         for i in range(9):
@@ -142,8 +133,6 @@ class Sudoku:
     def solutions(self) -> Iterator[Sudoku]:
         coord = self.get_next_coord()
         if coord is None:
-            if self.debug:
-                print("found a solution")
             yield self
             return
         row, col = coord
