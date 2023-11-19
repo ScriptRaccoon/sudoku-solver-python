@@ -5,13 +5,17 @@ from time import perf_counter
 import samples
 
 
+def key(row: int, col: int) -> str:
+    return f"{row}{col}"
+
+
 class Sudoku:
     peer_dict = {
-        f"{row}{col}": set.union(
-            {f"{i}{col}" for i in range(9) if i != row},
-            {f"{row}{j}" for j in range(9) if j != col},
+        key(row, col): set.union(
+            {key(i, col) for i in range(9) if i != row},
+            {key(row, j) for j in range(9) if j != col},
             {
-                f"{3*(row//3)+i}{3*(col//3)+j}"
+                key(3 * (row // 3) + i, 3 * (col // 3) + j)
                 for i in range(3)
                 for j in range(3)
                 if 3 * (row // 3) + i != row or 3 * (col // 3) + j != col
@@ -39,7 +43,7 @@ class Sudoku:
         board: list[list[int]],
     ) -> Sudoku:
         value_dict = {
-            f"{row}{col}": board[row][col] for row in range(9) for col in range(9)
+            key(row, col): board[row][col] for row in range(9) for col in range(9)
         }
         return Sudoku(value_dict, None)
 
@@ -50,7 +54,7 @@ class Sudoku:
         print(" " + "-" * 23)
         for row in range(9):
             for col in range(9):
-                num = self.value_dict[f"{row}{col}"]
+                num = self.value_dict[key(row, col)]
                 if col == 0:
                     print("| ", end="")
                 print(num if num > 0 else ".", end="")
@@ -63,12 +67,11 @@ class Sudoku:
         print()
 
     def candidates(self, row: int, col: int) -> str:
-        num = self.value_dict[f"{row}{col}"]
+        _key = key(row, col)
+        num = self.value_dict[_key]
         if num != 0:
             return str(num)
-        values_of_peers = {
-            self.value_dict[peer] for peer in Sudoku.peer_dict[f"{row}{col}"]
-        }
+        values_of_peers = {self.value_dict[peer] for peer in Sudoku.peer_dict[_key]}
         result = ""
         for n in range(1, 10):
             if n not in values_of_peers:
@@ -77,41 +80,38 @@ class Sudoku:
 
     def get_candidate_board(self) -> dict[str, str]:
         return {
-            f"{row}{col}": self.candidates(row, col)
+            key(row, col): self.candidates(row, col)
             for row in range(9)
             for col in range(9)
         }
 
     def get_next_coord(self) -> tuple[int, int] | None:
         candidate_list = [
-            (row, col, self.candidate_dict[f"{row}{col}"])
+            (row, col, self.candidate_dict[key(row, col)])
             for row in range(9)
             for col in range(9)
-            if self.value_dict[f"{row}{col}"] == 0
+            if self.value_dict[key(row, col)] == 0
         ]
         if len(candidate_list) == 0:
             return None
         coord_with_count = min(candidate_list, key=lambda x: len(x[2]))
-        coord = coord_with_count[:2]
-
-        return coord
+        return coord_with_count[:2]
 
     def remove_candidate(self, row: int, col: int, num: int) -> None:
-        if str(num) not in self.candidate_dict[f"{row}{col}"]:
+        _key = key(row, col)
+        if str(num) not in self.candidate_dict[_key]:
             return
-
-        self.candidate_dict[f"{row}{col}"] = self.candidate_dict[f"{row}{col}"].replace(
-            str(num), ""
-        )
-        if len(self.candidate_dict[f"{row}{col}"]) == 0:
+        self.candidate_dict[_key] = self.candidate_dict[_key].replace(str(num), "")
+        if len(self.candidate_dict[_key]) == 0:
             self.has_contradiction = True
-        elif len(self.candidate_dict[f"{row}{col}"]) == 1:
-            unique_candidate = int(self.candidate_dict[f"{row}{col}"][0])
+        elif len(self.candidate_dict[_key]) == 1:
+            unique_candidate = int(self.candidate_dict[_key])
             self.set_number(row, col, unique_candidate)
 
     def set_number(self, row: int, col: int, num: int) -> None:
-        self.value_dict[f"{row}{col}"] = num
-        self.candidate_dict[f"{row}{col}"] = str(num)
+        _key = key(row, col)
+        self.value_dict[_key] = num
+        self.candidate_dict[_key] = str(num)
         for i in range(9):
             if i != col:
                 self.remove_candidate(row, i, num)
@@ -136,7 +136,7 @@ class Sudoku:
             yield self
             return
         row, col = coord
-        for num in self.candidate_dict[f"{row}{col}"]:
+        for num in self.candidate_dict[key(row, col)]:
             copy = self.copy()
             copy.set_number(row, col, int(num))
             if not copy.has_contradiction:
