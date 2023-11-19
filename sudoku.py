@@ -1,35 +1,56 @@
 from __future__ import annotations
 from collections.abc import Iterator
-from copy import deepcopy
 from time import perf_counter
 
 import samples
 
 
 class Sudoku:
+    peer_dict = {
+        f"{row}{col}": set.union(
+            {f"{i}{col}" for i in range(9) if i != row},
+            {f"{row}{j}" for j in range(9) if j != col},
+            {
+                f"{3*(row//3)+i}{3*(col//3)+j}"
+                for i in range(3)
+                for j in range(3)
+                if 3 * (row // 3) + i != row or 3 * (col // 3) + j != col
+            },
+        )
+        for row in range(9)
+        for col in range(9)
+    }
+
     def __init__(
         self,
-        board: list[list[int]],
-        candidate_board: list[list[list[int]]] | None = None,
+        value_dict: dict[str, int],
+        candidate_dict: dict[str, str] | None = None,
         debug: bool = False,
     ) -> None:
-        self.board = board
+        self.value_dict = value_dict
         self.has_contradiction = False
         self.debug = debug
 
-        if candidate_board is None:
-            self.candidate_board = self.get_candidate_board()
+        if candidate_dict is None:
+            self.candidate_dict = self.get_candidate_board()
         else:
-            self.candidate_board = candidate_board
+            self.candidate_dict = candidate_dict
+
+    @staticmethod
+    def generate_from_board(board: list[list[int]], debug: bool = False) -> Sudoku:
+        value_dict = {
+            f"{row}{col}": board[row][col] for row in range(9) for col in range(9)
+        }
+        return Sudoku(value_dict, None, debug)
 
     def copy(self) -> Sudoku:
-        return Sudoku(deepcopy(self.board), deepcopy(self.candidate_board), self.debug)
+        return Sudoku(self.value_dict.copy(), self.candidate_dict.copy(), self.debug)
 
     def print(self) -> None:
         print(" " + "-" * 23)
         for row in range(9):
             for col in range(9):
-                num = self.board[row][col]
+                num = self.value_dict[f"{row}{col}"]
                 if col == 0:
                     print("| ", end="")
                 print(num if num > 0 else ".", end="")
@@ -41,32 +62,32 @@ class Sudoku:
                 print(" " + "-" * 23)
         print()
 
-    def candidates(self, row: int, col: int) -> list[int]:
-        num = self.board[row][col]
+    def candidates(self, row: int, col: int) -> str:
+        num = self.value_dict[f"{row}{col}"]
         if num != 0:
-            return [num]
-        row_values = self.board[row]
-        col_values = [self.board[i][col] for i in range(9)]
-        row_start = 3 * (row // 3)
-        col_start = 3 * (col // 3)
-        block_values = [
-            self.board[i][j]
-            for i in range(row_start, row_start + 3)
-            for j in range(col_start, col_start + 3)
-        ]
-        return [
-            n for n in range(1, 10) if n not in row_values + col_values + block_values
-        ]
+            return str(num)
+        values_of_peers = {
+            self.value_dict[peer] for peer in Sudoku.peer_dict[f"{row}{col}"]
+        }
+        result = ""
+        for n in range(1, 10):
+            if n not in values_of_peers:
+                result += str(n)
+        return result
 
-    def get_candidate_board(self) -> list[list[list[int]]]:
-        return [[self.candidates(row, col) for col in range(9)] for row in range(9)]
+    def get_candidate_board(self) -> dict[str, str]:
+        return {
+            f"{row}{col}": self.candidates(row, col)
+            for row in range(9)
+            for col in range(9)
+        }
 
     def get_next_coord(self) -> tuple[int, int] | None:
         candidate_list = [
-            (row, col, self.candidate_board[row][col])
+            (row, col, self.candidate_dict[f"{row}{col}"])
             for row in range(9)
             for col in range(9)
-            if self.board[row][col] == 0
+            if self.value_dict[f"{row}{col}"] == 0
         ]
         if len(candidate_list) == 0:
             return None
@@ -78,26 +99,28 @@ class Sudoku:
         return coord
 
     def remove_candidate(self, row: int, col: int, num: int) -> None:
-        if num not in self.candidate_board[row][col]:
+        if str(num) not in self.candidate_dict[f"{row}{col}"]:
             return
         if self.debug:
             print(f"remove candidate {num} from {(row,col)}")
-        self.candidate_board[row][col].remove(num)
-        if len(self.candidate_board[row][col]) == 0:
+        self.candidate_dict[f"{row}{col}"] = self.candidate_dict[f"{row}{col}"].replace(
+            str(num), ""
+        )
+        if len(self.candidate_dict[f"{row}{col}"]) == 0:
             if self.debug:
                 print(f"found a contradiction in {(row,col)}, will backtrack")
             self.has_contradiction = True
-        elif len(self.candidate_board[row][col]) == 1:
+        elif len(self.candidate_dict[f"{row}{col}"]) == 1:
             if self.debug:
                 print(f"just one candidate left in {(row,col)}")
-            unique_candidate = self.candidate_board[row][col][0]
+            unique_candidate = int(self.candidate_dict[f"{row}{col}"][0])
             self.set_number(row, col, unique_candidate)
 
     def set_number(self, row: int, col: int, num: int) -> None:
         if self.debug:
             print(f"in {(row,col)} we try to set {num}")
-        self.board[row][col] = num
-        self.candidate_board[row][col] = [num]
+        self.value_dict[f"{row}{col}"] = num
+        self.candidate_dict[f"{row}{col}"] = str(num)
         for i in range(9):
             if i != col:
                 self.remove_candidate(row, i, num)
@@ -124,15 +147,15 @@ class Sudoku:
             yield self
             return
         row, col = coord
-        for num in self.candidate_board[row][col]:
+        for num in self.candidate_dict[f"{row}{col}"]:
             copy = self.copy()
-            copy.set_number(row, col, num)
+            copy.set_number(row, col, int(num))
             if not copy.has_contradiction:
                 yield from copy.solutions()
 
 
 def main():
-    sudoku = Sudoku(samples.hard_sudoku, debug=False)
+    sudoku = Sudoku.generate_from_board(samples.hard_sudoku)
     sudoku.print()
 
     counter = 0
