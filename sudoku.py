@@ -1,3 +1,5 @@
+"""Efficient Sudoku solver"""
+
 from __future__ import annotations
 from collections.abc import Iterator
 from time import perf_counter
@@ -6,11 +8,14 @@ import samples
 
 
 def key(row: int, col: int) -> str:
+    """Encode coordinates such as (3,1) with the string 31"""
     return f"{row}{col}"
 
 
 class Sudoku:
-    peer_dict = {
+    """Sudoku class"""
+
+    peer_dict: dict[str, set[str]] = {
         key(row, col): set.union(
             {key(i, col) for i in range(9) if i != row},
             {key(row, j) for j in range(9) if j != col},
@@ -24,12 +29,14 @@ class Sudoku:
         for row in range(9)
         for col in range(9)
     }
+    """Dictionary of peers of a coordinate: those in the same row, column or block"""
 
     def __init__(
         self,
         value_dict: dict[str, int],
         candidate_dict: dict[str, str] | None = None,
     ) -> None:
+        """Initialize Sudoku with a value and a candidate dictionary"""
         self.value_dict = value_dict
         self.has_contradiction = False
 
@@ -42,15 +49,18 @@ class Sudoku:
     def generate_from_board(
         board: list[list[int]],
     ) -> Sudoku:
+        """Generates a Sudoku object from a given 2-dimensional list of integers"""
         value_dict = {
             key(row, col): board[row][col] for row in range(9) for col in range(9)
         }
         return Sudoku(value_dict, None)
 
     def copy(self) -> Sudoku:
+        """Generates a copy of the given Sudoku"""
         return Sudoku(self.value_dict.copy(), self.candidate_dict.copy())
 
     def print(self) -> None:
+        """Prints the Sudoku in a nice way to the console"""
         print(" " + "-" * 23)
         for row in range(9):
             for col in range(9):
@@ -67,6 +77,7 @@ class Sudoku:
         print()
 
     def candidates(self, row: int, col: int) -> str:
+        """Generates the list (encoded as a string) of candidates at a position"""
         _key = key(row, col)
         num = self.value_dict[_key]
         if num != 0:
@@ -79,6 +90,7 @@ class Sudoku:
         return result
 
     def get_candidate_board(self) -> dict[str, str]:
+        """Returns the dictionary of candidates over all coordinates"""
         return {
             key(row, col): self.candidates(row, col)
             for row in range(9)
@@ -86,6 +98,7 @@ class Sudoku:
         }
 
     def get_next_coord(self) -> tuple[int, int] | None:
+        """Returns the open coordinate with the least number of candidates"""
         candidate_list = [
             (row, col, self.candidate_dict[key(row, col)])
             for row in range(9)
@@ -98,6 +111,9 @@ class Sudoku:
         return coord_with_count[:2]
 
     def remove_candidate(self, row: int, col: int, num: int) -> None:
+        """Removes a candidate from a coordinate (in case it's there),
+        detects if a contradiction happens, and if a single candidate
+        is left this one is set."""
         _key = key(row, col)
         if str(num) not in self.candidate_dict[_key]:
             return
@@ -109,6 +125,8 @@ class Sudoku:
             self.set_number(row, col, unique_candidate)
 
     def set_number(self, row: int, col: int, num: int) -> None:
+        """Sets a number at a given coordinate, and removes that number
+        from the candidates of the coordinate's peers"""
         _key = key(row, col)
         self.value_dict[_key] = num
         self.candidate_dict[_key] = str(num)
@@ -131,6 +149,7 @@ class Sudoku:
                         return
 
     def solutions(self) -> Iterator[Sudoku]:
+        """Generates solutions of the given Sudoku"""
         coord = self.get_next_coord()
         if coord is None:
             yield self
@@ -144,6 +163,7 @@ class Sudoku:
 
 
 def main():
+    """Prints the solutions of a sample Sudoku"""
     sudoku = Sudoku.generate_from_board(samples.hard_sudoku)
     sudoku.print()
 
