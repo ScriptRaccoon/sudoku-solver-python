@@ -4,8 +4,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from time import perf_counter
 
-import samples
-
 
 def key(row: int, col: int) -> str:
     """Encode coordinates such as (3,1) with the string 31"""
@@ -55,6 +53,18 @@ class Sudoku:
             key(row, col): board[row][col] for row in range(9) for col in range(9)
         }
         return Sudoku(value_dict, None)
+
+    @staticmethod
+    def generate_from_string(line: str) -> Sudoku:
+        """Generates a Sudoku object from a string as in the samples file"""
+        line = line.replace("\n", "")
+        assert len(line) == 81
+        board = [[0 for _ in range(9)] for _ in range(9)]
+        for i, c in enumerate(line):
+            col = i // 9
+            row = i % 9
+            board[row][col] = int(c) if c.isnumeric() else 0
+        return Sudoku.generate_from_board(board)
 
     def copy(self) -> Sudoku:
         """Generates a copy of the given Sudoku"""
@@ -145,20 +155,28 @@ class Sudoku:
 
 def main():
     """Prints the solutions of a sample Sudoku"""
-    sudoku = Sudoku.generate_from_board(samples.hard_sudoku)
-    sudoku.print()
 
-    counter = 0
-    start = perf_counter()
-    sols = sudoku.solutions()
+    sudoku_counter = 0
+    with open("samples.txt", "r", encoding="utf8") as file:
+        for line in file:
+            if line.startswith("#"):
+                continue
+            sudoku_counter += 1
+            print(f"Sudoku #{sudoku_counter}")
+            sudoku = Sudoku.generate_from_string(line)
+            sudoku.print()
 
-    for sol in sols:
-        sol.print()
-        counter += 1
+            sol_counter = 0
+            start = perf_counter()
+            sols = sudoku.solutions()
 
-    end = perf_counter()
-    print(f"Found {counter} solutions")
-    print("Elapsed time: ", end - start)
+            for sol in sols:
+                sol.print()
+                sol_counter += 1
+
+            end = perf_counter()
+            print(f"Found {sol_counter} solutions")
+            print("Elapsed time: ", end - start, "\n")
 
 
 if __name__ == "__main__":
