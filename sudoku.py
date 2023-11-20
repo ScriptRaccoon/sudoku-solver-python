@@ -59,12 +59,16 @@ class Sudoku:
         """Generates a Sudoku object from a string as in the samples file"""
         line = line.replace("\n", "")
         assert len(line) == 81
-        board = [[0 for _ in range(9)] for _ in range(9)]
-        for i, c in enumerate(line):
-            col = i // 9
-            row = i % 9
-            board[row][col] = int(c) if c.isnumeric() else 0
-        return Sudoku.generate_from_board(board)
+
+        def to_num(c: str) -> int:
+            return int(c) if c.isnumeric() else 0
+
+        value_dict = {
+            key(row, col): to_num(line[row * 9 + col])
+            for row in range(9)
+            for col in range(9)
+        }
+        return Sudoku(value_dict)
 
     def copy(self) -> Sudoku:
         """Generates a copy of the given Sudoku"""
