@@ -13,7 +13,7 @@ def key(row: int, col: int) -> str:
 class Sudoku:
     """Sudoku class"""
 
-    peer_dict: dict[str, set[tuple[int, int]]] = {
+    peer_dict: dict[str, set[str]] = {
         key(row, col): set.union(
             {key(i, col) for i in range(9) if i != row},
             {key(row, j) for j in range(9) if j != col},
