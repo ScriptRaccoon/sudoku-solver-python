@@ -158,29 +158,30 @@ class Sudoku:
 
 
 def main():
-    """Prints the solutions of a sample Sudoku"""
-
+    """Prints the solutions of hard sample Sudokus and measures the speed"""
     sudoku_counter = 0
-    with open("samples.txt", "r", encoding="utf8") as file:
-        for line in file:
-            if line.startswith("#"):
-                continue
-            sudoku_counter += 1
-            print(f"Sudoku #{sudoku_counter}")
-            sudoku = Sudoku.generate_from_string(line)
-            sudoku.print()
+    with open("performance.txt", "w", encoding="utf8") as output:
+        with open("samples.txt", "r", encoding="utf8") as file:
+            for line in file:
+                if line.startswith("#"):
+                    continue
+                sudoku_counter += 1
+                print(f"Sudoku #{sudoku_counter}")
+                sudoku = Sudoku.generate_from_string(line)
+                sudoku.print()
 
-            sol_counter = 0
-            start = perf_counter()
-            sols = sudoku.solutions()
+                sol_counter = 0
+                start = perf_counter()
+                sols = sudoku.solutions()
 
-            for sol in sols:
-                sol.print()
-                sol_counter += 1
+                for sol in sols:
+                    sol.print()
+                    sol_counter += 1
 
-            end = perf_counter()
-            print(f"Found {sol_counter} solutions")
-            print("Elapsed time: ", end - start, "\n")
+                end = perf_counter()
+                print(f"Found {sol_counter} solutions")
+                print("Elapsed time: ", end - start, "\n")
+                output.write(str(end - start) + "\n")
 
 
 if __name__ == "__main__":
