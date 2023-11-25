@@ -10,27 +10,35 @@ def key(row: int, col: int) -> str:
     return str(row) + str(col)
 
 
+coords = {key(row, col) for row in range(9) for col in range(9)}
+"""List of all coordinates"""
+
+row_units = [{key(row, col) for row in range(9)} for col in range(9)]
+"""Lists of all rows as sets of coordinates"""
+
+col_units = [{key(row, col) for col in range(9)} for row in range(9)]
+"""List of all columns as sets of coordinates"""
+
+box_units = [
+    {key(3 * box_row + i, 3 * box_col + j) for i in range(3) for j in range(3)}
+    for box_row in range(3)
+    for box_col in range(3)
+]
+"""Lists of all boxes as sets of coordinates"""
+
+all_units = row_units + col_units + box_units
+"""List of all units (rows, columns, boxes)"""
+
+peers: dict[str, set[str]] = {
+    coord: set.union(*(unit - {coord} for unit in all_units if coord in unit))
+    for coord in coords
+}
+"""Dictionary of all peers of a coordinate: the other coordinates that lie
+in the same unit, and hence need to have different values in a Sudoku"""
+
+
 class Sudoku:
     """Sudoku class"""
-
-    coords = [key(row, col) for row in range(9) for col in range(9)]
-    """List of all coordinates, encoded as strings"""
-
-    peers: dict[str, set[str]] = {
-        key(row, col): set.union(
-            {key(i, col) for i in range(9) if i != row},
-            {key(row, j) for j in range(9) if j != col},
-            {
-                key(3 * (row // 3) + i, 3 * (col // 3) + j)
-                for i in range(3)
-                for j in range(3)
-                if 3 * (row // 3) + i != row or 3 * (col // 3) + j != col
-            },
-        )
-        for row in range(9)
-        for col in range(9)
-    }
-    """Dictionary of peers of a coordinate: those in the same row, column or block"""
 
     def __init__(
         self,
@@ -102,18 +110,18 @@ class Sudoku:
         digit = self.values[coord]
         if digit != 0:
             return str(digit)
-        values_of_peers = {self.values[peer] for peer in Sudoku.peers[coord]}
+        values_of_peers = {self.values[peer] for peer in peers[coord]}
         return "".join([str(n) for n in range(1, 10) if n not in values_of_peers])
 
     def get_candidate_board(self) -> dict[str, str]:
         """Returns the dictionary of candidates over all coordinates"""
-        return {coord: self.get_candidates(coord) for coord in Sudoku.coords}
+        return {coord: self.get_candidates(coord) for coord in coords}
 
     def get_next_coord(self) -> str | None:
         """Returns the free coordinate with the least number of candidates"""
         try:
             return min(
-                (coord for coord in Sudoku.coords if self.values[coord] == 0),
+                (coord for coord in coords if self.values[coord] == 0),
                 key=lambda coord: len(self.candidates[coord]),
             )
         except ValueError:
@@ -136,85 +144,31 @@ class Sudoku:
         from the candidates of the coordinate's peers"""
         self.values[coord] = digit
         self.candidates[coord] = str(digit)
-        for peer in Sudoku.peers[coord]:
+        for peer in peers[coord]:
             self.remove_candidate(peer, digit)
             if self.has_contradiction:
                 break
 
-    def hidden_single_in_row(self) -> None | tuple[int, str]:
-        """Returns a hidden single in a row if present"""
+    def get_hidden_single(self) -> None | tuple[int, str]:
+        """Returns a hidden single in a unit if present"""
         for digit in range(1, 10):
-            for row in range(9):
-                cols = [
-                    col
-                    for col in range(9)
-                    if self.values[key(row, col)] == 0
-                    if str(digit) in self.candidates[key(row, col)]
+            for unit in all_units:
+                possible_coords = [
+                    coord
+                    for coord in unit
+                    if str(digit) in self.candidates[coord] and self.values[coord] == 0
                 ]
-                if len(cols) == 1:
-                    coord = key(row, cols[0])
-                    return (digit, coord)
-        return None
-
-    def hidden_single_in_column(self) -> None | tuple[int, str]:
-        """Returns a hidden single in a column if present"""
-        for digit in range(1, 10):
-            for col in range(9):
-                rows = [
-                    row
-                    for row in range(9)
-                    if self.values[key(row, col)] == 0
-                    if str(digit) in self.candidates[key(row, col)]
-                ]
-                if len(rows) == 1:
-                    coord = key(rows[0], col)
-                    return (digit, coord)
-        return None
-
-    def hidden_single_in_box(self) -> None | tuple[int, str]:
-        """Returns a hidden single in a box if present"""
-        for digit in range(1, 10):
-            for i in range(3):
-                for j in range(3):
-                    box_coords = [
-                        key(row, col)
-                        for row in range(3 * i, 3 * i + 3)
-                        for col in range(3 * j, 3 * j + 3)
-                        if self.values[key(row, col)] == 0
-                        if str(digit) in self.candidates[key(row, col)]
-                    ]
-                    if len(box_coords) == 1:
-                        coord = box_coords[0]
-                        return (digit, coord)
+                if len(possible_coords) == 1:
+                    return (digit, possible_coords[0])
         return None
 
     def solutions(self) -> Iterator[Sudoku]:
         """Generates solutions of the given Sudoku"""
 
-        # hidden singles in rows
-        row_single = self.hidden_single_in_row()
-        if row_single:
-            digit, coord = row_single
-            copy = self.copy()
-            copy.set_digit(coord, digit)
-            if not copy.has_contradiction:
-                yield from copy.solutions()
-            return
-
-        # hidden singles in columns
-        col_single = self.hidden_single_in_column()
-        if col_single:
-            digit, coord = col_single
-            copy = self.copy()
-            copy.set_digit(coord, digit)
-            if not copy.has_contradiction:
-                yield from copy.solutions()
-            return
-
-        # hidden singles in boxes
-        box_single = self.hidden_single_in_box()
-        if box_single:
-            digit, coord = box_single
+        # get and set hidden single
+        single = self.get_hidden_single()
+        if single:
+            digit, coord = single
             copy = self.copy()
             copy.set_digit(coord, digit)
             if not copy.has_contradiction:
@@ -226,6 +180,7 @@ class Sudoku:
         if not next_coord:
             yield self
             return
+
         # branching
         for candidate in self.candidates[next_coord]:
             copy = self.copy()
@@ -271,4 +226,5 @@ def solve_sample():
 
 if __name__ == "__main__":
     # solve_sample()
-    measure_time()
+    # measure_time()
+    pass

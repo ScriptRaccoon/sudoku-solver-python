@@ -1,7 +1,59 @@
 """Tests for Sudoku class"""
-from sudoku import Sudoku
+from sudoku import Sudoku, coords, peers, all_units
 
 # pylint: disable=line-too-long, missing-function-docstring
+
+
+def test_coords():
+    assert isinstance(coords, set)
+    assert len(coords) == 81
+    assert "25" in coords
+    assert "89" not in coords
+    for coord in coords:
+        assert isinstance(coord, str)
+        assert len(coord) == 2
+
+
+def test_units():
+    assert len(all_units) == 27
+    assert isinstance(all_units, list)
+    row_unit = {"00", "01", "02", "03", "04", "05", "06", "07", "08"}
+    assert row_unit in all_units
+    for unit in all_units:
+        assert isinstance(unit, set)
+        assert len(unit) == 9
+
+
+def test_peers():
+    for coord, peers_of_coord in peers.items():
+        assert isinstance(peers_of_coord, set)
+        assert len(peers_of_coord) == 20
+        assert coord not in peers_of_coord
+        for peer in peers_of_coord:
+            assert isinstance(peer, str)
+            assert len(peer) == 2
+    assert peers["00"] == {
+        "22",
+        "06",
+        "30",
+        "40",
+        "60",
+        "01",
+        "12",
+        "10",
+        "50",
+        "02",
+        "20",
+        "04",
+        "08",
+        "07",
+        "80",
+        "70",
+        "05",
+        "21",
+        "03",
+        "11",
+    }
 
 
 def test_sample():
