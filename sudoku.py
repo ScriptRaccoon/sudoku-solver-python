@@ -137,12 +137,61 @@ class Sudoku:
             if self.has_contradiction:
                 return
 
+    def hidden_single_in_row(self):
+        for digit in range(1, 10):
+            for row in range(9):
+                cols = [
+                    col
+                    for col in range(9)
+                    if self.values[key(row, col)] == 0
+                    if str(digit) in self.candidates[key(row, col)]
+                ]
+                if len(cols) == 1:
+                    coord = key(row, cols[0])
+                    return (digit, coord)
+
+    def hidden_single_in_column(self):
+        for digit in range(1, 10):
+            for col in range(9):
+                rows = [
+                    row
+                    for row in range(9)
+                    if self.values[key(row, col)] == 0
+                    if str(digit) in self.candidates[key(row, col)]
+                ]
+                if len(rows) == 1:
+                    coord = key(rows[0], col)
+                    return (digit, coord)
+
     def solutions(self) -> Iterator[Sudoku]:
         """Generates solutions of the given Sudoku"""
+
+        # hidden singles in rows
+        row_single = self.hidden_single_in_row()
+        if row_single:
+            digit, coord = row_single
+            copy = self.copy()
+            copy.set_digit(coord, digit)
+            if not copy.has_contradiction:
+                yield from copy.solutions()
+            return
+
+        # hidden singles in columns
+        col_single = self.hidden_single_in_column()
+        if col_single:
+            digit, coord = col_single
+            copy = self.copy()
+            copy.set_digit(coord, digit)
+            if not copy.has_contradiction:
+                yield from copy.solutions()
+            return
+
+        # get coordinage with few candidates left
         coord = self.get_next_coord()
         if not coord:
             yield self
             return
+        # branching
         for candidate in self.candidates[coord]:
             copy = self.copy()
             copy.set_digit(coord, int(candidate))
@@ -186,5 +235,5 @@ def solve_sample():
 
 
 if __name__ == "__main__":
-    solve_sample()
-    # measure_time()
+    # solve_sample()
+    measure_time()
