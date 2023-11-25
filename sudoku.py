@@ -206,7 +206,9 @@ def measure_time():
                 end = perf_counter()
                 output.write(str(end - start) + "\n")
                 total += end - start
-        output.write("total: " + str(total))
+        output.write("total: " + str(total) + "\n")
+        average = total / sudoku_counter
+        output.write("average: " + str(average) + "\n")
     print("results written to performance.txt")
 
 
@@ -226,5 +228,4 @@ def solve_sample():
 
 if __name__ == "__main__":
     # solve_sample()
-    # measure_time()
-    pass
+    measure_time()
