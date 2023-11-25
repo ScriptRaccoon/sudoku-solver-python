@@ -143,9 +143,9 @@ class Sudoku:
         if not coord:
             yield self
             return
-        for num in self.candidates[coord]:
+        for candidate in self.candidates[coord]:
             copy = self.copy()
-            copy.set_digit(coord, int(num))
+            copy.set_digit(coord, int(candidate))
             if not copy.has_contradiction:
                 yield from copy.solutions()
 
