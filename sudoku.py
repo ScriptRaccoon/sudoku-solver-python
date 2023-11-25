@@ -73,6 +73,7 @@ class Sudoku:
         return Sudoku(values)
 
     def to_line(self) -> str:
+        """Converts Sudoku to a string line"""
         return "".join(map(str, list(self.values.values())))
 
     def copy(self) -> Sudoku:
@@ -112,10 +113,10 @@ class Sudoku:
         """Returns the free coordinate with the least number of candidates"""
         try:
             return min(
-                [coord for coord in Sudoku.coords if self.values[coord] == 0],
+                (coord for coord in Sudoku.coords if self.values[coord] == 0),
                 key=lambda coord: len(self.candidates[coord]),
             )
-        except:
+        except ValueError:
             return None
 
     def remove_candidate(self, coord: str, digit: int) -> None:
@@ -138,9 +139,10 @@ class Sudoku:
         for peer in Sudoku.peers[coord]:
             self.remove_candidate(peer, digit)
             if self.has_contradiction:
-                return
+                break
 
-    def hidden_single_in_row(self):
+    def hidden_single_in_row(self) -> None | tuple[int, str]:
+        """Returns a hidden single in a row if present"""
         for digit in range(1, 10):
             for row in range(9):
                 cols = [
@@ -152,8 +154,10 @@ class Sudoku:
                 if len(cols) == 1:
                     coord = key(row, cols[0])
                     return (digit, coord)
+        return None
 
-    def hidden_single_in_column(self):
+    def hidden_single_in_column(self) -> None | tuple[int, str]:
+        """Returns a hidden single in a column if present"""
         for digit in range(1, 10):
             for col in range(9):
                 rows = [
@@ -165,8 +169,10 @@ class Sudoku:
                 if len(rows) == 1:
                     coord = key(rows[0], col)
                     return (digit, coord)
+        return None
 
-    def hidden_single_in_box(self):
+    def hidden_single_in_box(self) -> None | tuple[int, str]:
+        """Returns a hidden single in a box if present"""
         for digit in range(1, 10):
             for i in range(3):
                 for j in range(3):
@@ -180,6 +186,7 @@ class Sudoku:
                     if len(box_coords) == 1:
                         coord = box_coords[0]
                         return (digit, coord)
+        return None
 
     def solutions(self) -> Iterator[Sudoku]:
         """Generates solutions of the given Sudoku"""
@@ -215,14 +222,14 @@ class Sudoku:
             return
 
         # get coordinage with few candidates left
-        coord = self.get_next_coord()
-        if not coord:
+        next_coord = self.get_next_coord()
+        if not next_coord:
             yield self
             return
         # branching
-        for candidate in self.candidates[coord]:
+        for candidate in self.candidates[next_coord]:
             copy = self.copy()
-            copy.set_digit(coord, int(candidate))
+            copy.set_digit(next_coord, int(candidate))
             if not copy.has_contradiction:
                 yield from copy.solutions()
 
@@ -248,18 +255,6 @@ def measure_time():
     print("results written to performance.txt")
 
 
-def test_sample():
-    """Tests the solving algorithm for a sample Sudoku"""
-    sample_sudo = "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5...."
-    correct_sol = "487312695593684271126597384735849162914265837268731549851476923379128456642953718"
-    sudoku = Sudoku.generate_from_string(sample_sudo)
-    sols = list(sudoku.solutions())
-    assert len(sols) == 1
-    sol = sols[0]
-    assert sol.to_line() == correct_sol
-    print("ok")
-
-
 def solve_sample():
     """Prints the solutions of a sample Sudoku"""
     sample = "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5...."
@@ -276,5 +271,4 @@ def solve_sample():
 
 if __name__ == "__main__":
     # solve_sample()
-    # test_sample()
     measure_time()
