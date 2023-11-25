@@ -72,6 +72,9 @@ class Sudoku:
         }
         return Sudoku(values)
 
+    def to_line(self) -> str:
+        return "".join(map(str, list(self.values.values())))
+
     def copy(self) -> Sudoku:
         """Generates a copy of the given Sudoku"""
         return Sudoku(self.values.copy(), self.candidates.copy())
@@ -163,6 +166,21 @@ class Sudoku:
                     coord = key(rows[0], col)
                     return (digit, coord)
 
+    def hidden_single_in_box(self):
+        for digit in range(1, 10):
+            for i in range(3):
+                for j in range(3):
+                    box_coords = [
+                        key(row, col)
+                        for row in range(3 * i, 3 * i + 3)
+                        for col in range(3 * j, 3 * j + 3)
+                        if self.values[key(row, col)] == 0
+                        if str(digit) in self.candidates[key(row, col)]
+                    ]
+                    if len(box_coords) == 1:
+                        coord = box_coords[0]
+                        return (digit, coord)
+
     def solutions(self) -> Iterator[Sudoku]:
         """Generates solutions of the given Sudoku"""
 
@@ -180,6 +198,16 @@ class Sudoku:
         col_single = self.hidden_single_in_column()
         if col_single:
             digit, coord = col_single
+            copy = self.copy()
+            copy.set_digit(coord, digit)
+            if not copy.has_contradiction:
+                yield from copy.solutions()
+            return
+
+        # hidden singles in boxes
+        box_single = self.hidden_single_in_box()
+        if box_single:
+            digit, coord = box_single
             copy = self.copy()
             copy.set_digit(coord, digit)
             if not copy.has_contradiction:
@@ -220,6 +248,18 @@ def measure_time():
     print("results written to performance.txt")
 
 
+def test_sample():
+    """Tests the solving algorithm for a sample Sudoku"""
+    sample_sudo = "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5...."
+    correct_sol = "487312695593684271126597384735849162914265837268731549851476923379128456642953718"
+    sudoku = Sudoku.generate_from_string(sample_sudo)
+    sols = list(sudoku.solutions())
+    assert len(sols) == 1
+    sol = sols[0]
+    assert sol.to_line() == correct_sol
+    print("ok")
+
+
 def solve_sample():
     """Prints the solutions of a sample Sudoku"""
     sample = "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5...."
@@ -236,4 +276,5 @@ def solve_sample():
 
 if __name__ == "__main__":
     # solve_sample()
+    # test_sample()
     measure_time()
