@@ -102,7 +102,6 @@ class Sudoku:
             output += "\n"
             if row % 3 == 2:
                 output += " " + "-" * 23 + "\n"
-        output += "\n"
         return output
 
     def get_candidates(self, coord: str) -> str:
@@ -216,9 +215,9 @@ def solve_sample():
     """Prints the solutions of a sample Sudoku"""
     sample = "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5...."
     sudoku = Sudoku.generate_from_string(sample)
-    print("Sample:")
+    print("Sample:\n")
     print(sudoku)
-    print("Solutions:")
+    print("Solutions:\n")
     start = perf_counter()
     for sol in sudoku.solutions():
         print(sol)
@@ -227,5 +226,5 @@ def solve_sample():
 
 
 if __name__ == "__main__":
-    # solve_sample()
-    measure_time()
+    solve_sample()
+    # measure_time()

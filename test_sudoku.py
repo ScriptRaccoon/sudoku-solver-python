@@ -64,3 +64,12 @@ def test_sample():
     assert len(sols) == 1
     sol = sols[0]
     assert sol.to_line() == correct_sol
+
+
+def test_several_sols():
+    sample_sudok = "....5.2......479..1.5.6.8..246......3.7...4.6......753..9.8.5....821......4.7...."
+    one_solution = "493158267862347915175962834246735198357891426981426753719683542538214679624579381"
+    sudoku = Sudoku.generate_from_string(sample_sudok)
+    sols = list(sudoku.solutions())
+    assert len(sols) == 6
+    assert any(sol.to_line() == one_solution for sol in sols)
