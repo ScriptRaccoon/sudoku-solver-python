@@ -191,7 +191,7 @@ class Sudoku:
 def measure_time() -> None:
     """Solves all sudoku samples and measures the time"""
     sudoku_counter = 0
-    total = 0
+    total: float = 0
     with open("performance.txt", "w", encoding="utf8") as output:
         with open("samples.txt", "r", encoding="utf8") as file:
             for line in file:
