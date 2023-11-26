@@ -188,7 +188,7 @@ class Sudoku:
                 yield from copy.solutions()
 
 
-def measure_time():
+def measure_time() -> None:
     """Solves all sudoku samples and measures the time"""
     sudoku_counter = 0
     total = 0
@@ -211,7 +211,7 @@ def measure_time():
     print("results written to performance.txt")
 
 
-def solve_sample():
+def solve_sample() -> None:
     """Prints the solutions of a sample Sudoku"""
     sample = "48.3............71.2.......7.5....6....2..8.............1.76...3.....4......5...."
     sudoku = Sudoku.generate_from_string(sample)
