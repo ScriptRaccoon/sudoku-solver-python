@@ -91,9 +91,9 @@ def test_candidates():
     sudoku = Sudoku.generate_from_string(sample)
     candidates = sudoku.candidates
     assert isinstance(candidates, dict)
-    assert candidates["00"] == "4"
-    assert candidates["02"] == "679"
-    assert candidates["34"] == "13489"
+    assert candidates["00"] == {4}
+    assert candidates["02"] == {6, 7, 9}
+    assert candidates["34"] == {1, 3, 4, 8, 9}
 
 
 def test_printing():

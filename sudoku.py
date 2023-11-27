@@ -43,14 +43,13 @@ class Sudoku:
     def __init__(
         self,
         values: dict[str, int],
-        candidates: dict[str, str] | None = None,
+        candidates: dict[str, set[int]] | None = None,
     ) -> None:
         """Initialize a Sudoku with a value and candidate dictionaries
 
         Arguments:
-            values: a dictionary associating to each coordinate the digit at this square
-            candidates: a dictionary associating to each coordinate the list of possible values
-            at this square (encoded as a string of digits)
+            values: dictionary associating to each coordinate the digit at this square
+            candidates: dictionary associating to each coordinate the set of its possible digits
         """
         self.values = values
         self.has_contradiction = False
@@ -108,17 +107,18 @@ class Sudoku:
 
     def copy(self) -> Sudoku:
         """Generates a copy of the Sudoku"""
-        return Sudoku(self.values.copy(), self.candidates.copy())
+        candidates_copy = {coord: self.candidates[coord].copy() for coord in coords}
+        return Sudoku(self.values.copy(), candidates_copy)
 
-    def get_candidates(self, coord: str) -> str:
-        """Generates the list of candidates (encoded as a string of digits) at a coordinate"""
+    def get_candidates(self, coord: str) -> set[int]:
+        """Generates the set of candidates at a coordinate"""
         digit = self.values[coord]
         if digit != 0:
-            return str(digit)
+            return {digit}
         values_of_peers = {self.values[peer] for peer in peers[coord]}
-        return "".join([str(n) for n in range(1, 10) if n not in values_of_peers])
+        return set(range(1, 10)) - values_of_peers
 
-    def get_candidate_dict(self) -> dict[str, str]:
+    def get_candidate_dict(self) -> dict[str, set[int]]:
         """Returns the dictionary of candidates for all coordinates"""
         return {coord: self.get_candidates(coord) for coord in coords}
 
@@ -136,19 +136,20 @@ class Sudoku:
         """Removes a candidate from a coordinate (in case it's there),
         detects if a contradiction arises, and if a single candidate
         is left this cabdidate is set as a value."""
-        if str(digit) not in self.candidates[coord]:
+        if digit not in self.candidates[coord]:
             return
-        self.candidates[coord] = self.candidates[coord].replace(str(digit), "")
+        self.candidates[coord].remove(digit)
         if not self.candidates[coord]:
             self.has_contradiction = True
         elif len(self.candidates[coord]) == 1:
-            self.set_digit(coord, int(self.candidates[coord]))
+            candidate = list(self.candidates[coord])[0]
+            self.set_digit(coord, candidate)
 
     def set_digit(self, coord: str, digit: int) -> None:
         """Sets a digit at a given coordinate and removes that digit
         from the candidates of the coordinate's peers"""
         self.values[coord] = digit
-        self.candidates[coord] = str(digit)
+        self.candidates[coord] = {digit}
         for peer in peers[coord]:
             self.remove_candidate(peer, digit)
             if self.has_contradiction:
@@ -162,7 +163,7 @@ class Sudoku:
                 possible_coords = [
                     coord
                     for coord in unit
-                    if self.values[coord] == 0 and str(digit) in self.candidates[coord]
+                    if self.values[coord] == 0 and digit in self.candidates[coord]
                 ]
                 if len(possible_coords) == 1:
                     return digit, possible_coords[0]
@@ -189,7 +190,7 @@ class Sudoku:
         # test all candidates
         for candidate in self.candidates[next_coord]:
             copy = self.copy()
-            copy.set_digit(next_coord, int(candidate))
+            copy.set_digit(next_coord, candidate)
             if not copy.has_contradiction:
                 yield from copy.solutions()
 
