@@ -198,23 +198,26 @@ def measure_time() -> None:
     """Solves all sudoku samples and measures the time"""
     sudoku_counter = 0
     total: float = 0
-    with open("performance.txt", "w", encoding="utf8") as output:
-        with open("samples.txt", "r", encoding="utf8") as file:
-            for line in file:
-                if line.startswith("#"):
-                    continue
-                sudoku_counter += 1
-                sudoku = Sudoku.generate_from_string(line)
-                print("solving sudoku", sudoku_counter)
-                start = perf_counter()
-                list(sudoku.solutions())
-                end = perf_counter()
-                output.write(str(end - start) + "\n")
-                total += end - start
-        output.write("total: " + str(total) + "\n")
-        average = total / sudoku_counter
-        output.write("average: " + str(average) + "\n")
-    print("results written to performance.txt")
+    with open("solutions.txt", "w", encoding="utf8") as sol_file:
+        with open("performance.txt", "w", encoding="utf8") as perf_file:
+            with open("samples.txt", "r", encoding="utf8") as sample_file:
+                for line in sample_file:
+                    if line.startswith("#"):
+                        continue
+                    sudoku_counter += 1
+                    sudoku = Sudoku.generate_from_string(line)
+                    print("solving sudoku", sudoku_counter)
+                    start = perf_counter()
+                    sols = list(sudoku.solutions())
+                    end = perf_counter()
+                    perf_file.write(str(end - start) + "\n")
+                    total += end - start
+                    assert len(sols) == 1
+                    sol_file.write(sols[0].to_line() + "\n")
+            perf_file.write("total: " + str(total) + "\n")
+            average = total / sudoku_counter
+            perf_file.write("average: " + str(average) + "\n")
+    print("results written to performance.txt and solutions.txt")
 
 
 def solve_sample() -> None:
