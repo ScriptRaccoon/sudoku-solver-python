@@ -11,7 +11,7 @@ def key(row: int, col: int) -> str:
 
 
 coords = {key(row, col) for row in range(9) for col in range(9)}
-"""List of all coordinates"""
+"""Set of all coordinates"""
 
 row_units = [{key(row, col) for row in range(9)} for col in range(9)]
 """Lists of all rows as sets of coordinates"""
@@ -24,7 +24,7 @@ box_units = [
     for box_row in range(3)
     for box_col in range(3)
 ]
-"""Lists of all boxes as sets of coordinates"""
+"""List of all boxes as sets of coordinates"""
 
 all_units = row_units + col_units + box_units
 """List of all units (rows, columns, boxes)"""
@@ -45,12 +45,18 @@ class Sudoku:
         values: dict[str, int],
         candidates: dict[str, str] | None = None,
     ) -> None:
-        """Initialize Sudoku with a value and a candidate dictionary"""
+        """Initialize a Sudoku with a value and candidate dictionaries
+
+        Arguments:
+            values: a dictionary associating to each coordinate the digit at this square
+            candidates: a dictionary associating to each coordinate the list of possible values
+            at this square (encoded as a string of digits)
+        """
         self.values = values
         self.has_contradiction = False
 
         if candidates is None:
-            self.candidates = self.get_candidate_board()
+            self.candidates = self.get_candidate_dict()
         else:
             self.candidates = candidates
 
@@ -65,31 +71,27 @@ class Sudoku:
         return Sudoku(values)
 
     @staticmethod
-    def generate_from_string(line: str) -> Sudoku:
-        """Generates a Sudoku object from a string as in the samples file"""
-        line = line.replace("\n", "")
-        assert len(line) == 81
+    def generate_from_string(string: str) -> Sudoku:
+        """Generates a Sudoku object from a one-line string as in the samples file"""
+        string = string.replace("\n", "")
+        assert len(string) == 81
 
         def to_digit(c: str) -> int:
             return int(c) if c.isnumeric() else 0
 
         values = {
-            key(row, col): to_digit(line[row * 9 + col])
+            key(row, col): to_digit(string[row * 9 + col])
             for row in range(9)
             for col in range(9)
         }
         return Sudoku(values)
 
     def to_line(self) -> str:
-        """Converts Sudoku to a string line"""
+        """Converts the Sudoku to a one-line string"""
         return "".join(map(str, list(self.values.values())))
 
-    def copy(self) -> Sudoku:
-        """Generates a copy of the given Sudoku"""
-        return Sudoku(self.values.copy(), self.candidates.copy())
-
     def __str__(self) -> str:
-        """Prints the Sudoku in a nice way to the console"""
+        """Computes a nice string representation of the Sudoku, used for printing to the console."""
         output = " " + "-" * 23 + "\n"
         for row in range(9):
             for col in range(9):
@@ -104,16 +106,20 @@ class Sudoku:
                 output += " " + "-" * 23 + "\n"
         return output
 
+    def copy(self) -> Sudoku:
+        """Generates a copy of the Sudoku"""
+        return Sudoku(self.values.copy(), self.candidates.copy())
+
     def get_candidates(self, coord: str) -> str:
-        """Generates the list (encoded as a string) of candidates at a position"""
+        """Generates the list of candidates (encoded as a string of digits) at a coordinate"""
         digit = self.values[coord]
         if digit != 0:
             return str(digit)
         values_of_peers = {self.values[peer] for peer in peers[coord]}
         return "".join([str(n) for n in range(1, 10) if n not in values_of_peers])
 
-    def get_candidate_board(self) -> dict[str, str]:
-        """Returns the dictionary of candidates over all coordinates"""
+    def get_candidate_dict(self) -> dict[str, str]:
+        """Returns the dictionary of candidates for all coordinates"""
         return {coord: self.get_candidates(coord) for coord in coords}
 
     def get_next_coord(self) -> str | None:
@@ -128,8 +134,8 @@ class Sudoku:
 
     def remove_candidate(self, coord: str, digit: int) -> None:
         """Removes a candidate from a coordinate (in case it's there),
-        detects if a contradiction happens, and if a single candidate
-        is left this one is set."""
+        detects if a contradiction arises, and if a single candidate
+        is left this cabdidate is set as a value."""
         if str(digit) not in self.candidates[coord]:
             return
         self.candidates[coord] = self.candidates[coord].replace(str(digit), "")
@@ -149,16 +155,17 @@ class Sudoku:
                 break
 
     def get_hidden_single(self) -> None | tuple[int, str]:
-        """Returns a hidden single in a unit if present"""
+        """Returns a hidden single in a unit if present: a row, column or box
+        where some digit has only one possible coordinate left"""
         for digit in range(1, 10):
             for unit in all_units:
                 possible_coords = [
                     coord
                     for coord in unit
-                    if str(digit) in self.candidates[coord] and self.values[coord] == 0
+                    if self.values[coord] == 0 and str(digit) in self.candidates[coord]
                 ]
                 if len(possible_coords) == 1:
-                    return (digit, possible_coords[0])
+                    return digit, possible_coords[0]
         return None
 
     def solutions(self) -> Iterator[Sudoku]:
@@ -168,19 +175,18 @@ class Sudoku:
         single = self.get_hidden_single()
         if single:
             digit, coord = single
-            copy = self.copy()
-            copy.set_digit(coord, digit)
-            if not copy.has_contradiction:
-                yield from copy.solutions()
+            self.set_digit(coord, digit)
+            if not self.has_contradiction:
+                yield from self.solutions()
             return
 
-        # get coordinage with few candidates left
+        # take coordinate with least number of candidates left
         next_coord = self.get_next_coord()
         if not next_coord:
             yield self
             return
 
-        # branching
+        # test all candidates
         for candidate in self.candidates[next_coord]:
             copy = self.copy()
             copy.set_digit(next_coord, int(candidate))
@@ -224,7 +230,6 @@ def solve_sample() -> None:
         [9, 0, 3, 0, 0, 0, 0, 0, 0],
         [0, 2, 0, 0, 0, 0, 1, 0, 0],
     ]
-
     sudoku = Sudoku.generate_from_board(board)
     print("Sample:\n")
     print(sudoku)

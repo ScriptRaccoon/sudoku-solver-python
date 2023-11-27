@@ -20,8 +20,8 @@ def test_coords():
 
 
 def test_units():
-    assert len(all_units) == 9 + 9 + 9  # 9 rows, 9 columns, 9 boxes
     assert isinstance(all_units, list)
+    assert len(all_units) == 9 + 9 + 9  # 9 rows, 9 columns, 9 boxes
     row_unit = {"00", "01", "02", "03", "04", "05", "06", "07", "08"}
     assert row_unit in all_units
     for unit in all_units:
