@@ -197,11 +197,11 @@ class Sudoku:
 
 def measure_time() -> None:
     """Solves all sudoku samples and measures the time"""
-    sudoku_counter = 0
+    sudoku_counter: int = 0
     total: float = 0
-    with open("solutions.txt", "w", encoding="utf8") as sol_file:
-        with open("performance.txt", "w", encoding="utf8") as perf_file:
-            with open("samples.txt", "r", encoding="utf8") as sample_file:
+    with open("data/solutions.txt", "w", encoding="utf8") as sol_file:
+        with open("data/performance.txt", "w", encoding="utf8") as perf_file:
+            with open("data/samples.txt", "r", encoding="utf8") as sample_file:
                 for line in sample_file:
                     if line.startswith("#"):
                         continue
@@ -218,7 +218,7 @@ def measure_time() -> None:
             perf_file.write("total: " + str(total) + "\n")
             average = total / sudoku_counter
             perf_file.write("average: " + str(average) + "\n")
-    print("results written to performance.txt and solutions.txt")
+    print("results written to data/performance.txt and data/solutions.txt")
 
 
 def solve_sample() -> None:
