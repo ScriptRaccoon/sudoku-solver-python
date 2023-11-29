@@ -189,7 +189,7 @@ class Sudoku:
 
         # test all candidates
         for candidate in self.candidates[next_coord]:
-            copy = self.copy()
+            copy = self.copy() if len(self.candidates[next_coord]) > 1 else self
             copy.set_digit(next_coord, candidate)
             if not copy.has_contradiction:
                 yield from copy.solutions()
@@ -246,5 +246,5 @@ def solve_sample() -> None:
 
 
 if __name__ == "__main__":
-    solve_sample()
-    # measure_time()
+    # solve_sample()
+    measure_time()
