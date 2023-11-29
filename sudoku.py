@@ -13,10 +13,10 @@ def key(row: int, col: int) -> str:
 coords = {key(row, col) for row in range(9) for col in range(9)}
 """Set of all coordinates"""
 
-row_units = [{key(row, col) for row in range(9)} for col in range(9)]
+row_units = [{key(row, col) for col in range(9)} for row in range(9)]
 """Lists of all rows as sets of coordinates"""
 
-col_units = [{key(row, col) for col in range(9)} for row in range(9)]
+col_units = [{key(row, col) for row in range(9)} for col in range(9)]
 """List of all columns as sets of coordinates"""
 
 box_units = [

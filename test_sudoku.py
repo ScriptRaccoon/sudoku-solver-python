@@ -1,5 +1,14 @@
 """Tests for Sudoku class"""
-from sudoku import Sudoku, key, coords, peers, all_units
+from sudoku import (
+    Sudoku,
+    key,
+    coords,
+    peers,
+    all_units,
+    row_units,
+    col_units,
+    box_units,
+)
 
 # pylint: disable=line-too-long, missing-function-docstring
 
@@ -23,13 +32,18 @@ def test_units():
     assert isinstance(all_units, list)
     assert len(all_units) == 9 + 9 + 9  # 9 rows, 9 columns, 9 boxes
     row_unit = {"00", "01", "02", "03", "04", "05", "06", "07", "08"}
-    assert row_unit in all_units
+    assert row_unit in row_units
+    col_unit = {"01", "11", "21", "31", "41", "51", "61", "71", "81"}
+    assert col_unit in col_units
+    box_unit = {"00", "01", "02", "10", "11", "12", "20", "21", "22"}
+    assert box_unit in box_units
     for unit in all_units:
         assert isinstance(unit, set)
         assert len(unit) == 9
 
 
 def test_peers():
+    assert isinstance(peers, dict)
     for coord, peers_of_coord in peers.items():
         assert isinstance(peers_of_coord, set)
         assert len(peers_of_coord) == 20
