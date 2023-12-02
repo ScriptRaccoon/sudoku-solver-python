@@ -1,6 +1,6 @@
 # Solving Sudokus using constraint programming
 
-This is an efficient Sudoku solving algorithm using constraint programming. It is very much inspired by (but different from) Peter Norvig's [Solving Every Sudoku Puzzle](https://norvig.com/sudoku.html). It generates quickly all solutions to a given Sudoku (usually in less than 100ms).
+This is an efficient Sudoku solving algorithm using constraint programming, written in Python. It is very much inspired by (but different from) Peter Norvig's [Solving Every Sudoku Puzzle](https://norvig.com/sudoku.html). It generates quickly all solutions to a given Sudoku (usually in less than 100ms).
 
 The basic idea is to keep track of all the candidates (possible digits) which can go into a square which is not filled yet. When only one candidate is left, place it (this is called a _naked single_). Otherwise, find a square which has the least number of candidates (in practice, that number is usually 1 or 2) and try them one after another. Every time a digit is set, it is removed as a candidate from all of its peers - these are the squares that are in the same unit (row, column or box). Recursively apply this procedure until all squares are filled.
 
